@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import cors from 'cors';
 import express from 'express';
+import { parse } from 'node-html-parser';
+
 
 const app = express();
 const PORT = 3000;
@@ -9,25 +11,32 @@ app.use(cors());
 
 
 function getArchiveBody(htmlString){
-    const parser = new DOMParser();
+    const html = parse(htmlString);
 
-    // Parse the HTML string into a DOM Document
-    return parser.parseFromString(htmlString, 'text/html');
+    let innerContent = html.getElementById("CONTENT");
+    let newHTML = html.querySelector("body").set_content(innerContent);
+
+
+    return newHTML.toString();
+
+
 
 }
 
 function fetchArchive(url){
 
+    console.log(`fetching: ${url}`);
+
     return fetch("http://archive.is/latest/"+url, {
         method: 'GET',
     })
-        .then(resp=>resp.text());
-        // .then(getArchiveBody);
+        .then(resp=>resp.text())
+        .then(getArchiveBody);
 }
 
 app.get('/', async (req, res) => {
-    let data = await fetchArchive(URL);
-    console.log(data);
+    console.log(`query: ${JSON.stringify(req.query)}`);
+    let data = await fetchArchive(req.query.url);
 
     res.send(data);
 
